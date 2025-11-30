@@ -54,9 +54,22 @@ echo.
 echo  必要なファイルを準備しています...
 python -m venv .venv
 
-:: --- 修正箇所: libsフォルダからインストールする ---
-echo  ライブラリをインストール中...
-.venv\Scripts\python.exe -m pip install --no-index --find-links=libs -r requirements.txt
+:: --- ライブラリのインストール (自動修復機能付き) ---
+if exist "libs" (
+    echo  [オフラインモード] libsフォルダからインストールを試みます...
+    .venv\Scripts\python.exe -m pip install --no-index --find-links=libs -r requirements.txt
+    
+    :: エラー判定: もしlibsからのインストールに失敗したら
+    if errorlevel 1 (
+        echo.
+        echo  [!] libsフォルダのファイルが不足しているか、バージョンが合いません。
+        echo  [WEB] [オンラインモード] に切り替えてインターネットからダウンロードします...
+        .venv\Scripts\python.exe -m pip install -r requirements.txt
+    )
+) else (
+    echo  [WEB] [オンラインモード] インターネットからダウンロードします...
+    .venv\Scripts\python.exe -m pip install -r requirements.txt
+)
 
 echo.
 echo  準備が完了しました。
