@@ -71,7 +71,6 @@ def get_weights(level):
         "二等": {"ch2": 3, "ch3": 17, "ch4": 15, "ch5": 7, "ch6": 8},
         "一等": {"ch2": 4, "ch3": 24, "ch4": 20, "ch5": 10, "ch6": 12}
     }
-    # configファイルがあれば上書き
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -105,11 +104,10 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # 【修正箇所】アプリを終了してCMDに戻る処理
     if st.button("終了してCMDメニューに戻る", key="sidebar_exit", type="primary", use_container_width=True):
         st.warning("終了します...")
-        time.sleep(1) # メッセージを見せるため少し待機
-        os._exit(0)   # プロセスを強制終了(start.batに戻る)
+        time.sleep(1)
+        os._exit(0)
 
 # ==========================================
 # 6. メイン画面の分岐処理
@@ -121,6 +119,11 @@ st.markdown("""
 div.stButton > button { width: 100%; text-align: left; padding: 15px; }
 .qid { background-color:#eee; padding:2px 8px; border-radius:4px; font-size:0.9em; }
 .badge { background-color:#007bff; color:white; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-right:5px; }
+/* 結果画面用のスタイル */
+.opt-box { padding: 10px; border-radius: 5px; margin: 5px 0; font-size: 0.95em; color: #333; border: 1px solid #ddd; }
+.opt-correct { background-color: #d4edda; border-color: #c3e6cb; color: #155724; font-weight: bold; } /* 緑 */
+.opt-wrong { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; font-weight: bold; }   /* 赤 */
+.opt-normal { background-color: #f9f9f9; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -128,11 +131,9 @@ div.stButton > button { width: 100%; text-align: left; padding: 15px; }
 if st.session_state.exam_state == "MENU":
     st.title("🚁 ドローン学科試験CBT")
     
-    # モード設定
     st.session_state.exam_mode = st.checkbox("試験本番モード (解説なし・一気解き)", value=st.session_state.exam_mode)
     st.divider()
 
-    # 開始処理を行う関数
     def launch_exam(level, review_mode=False, review_qs=None):
         target_model = st.session_state.selected_model
         
@@ -166,7 +167,7 @@ if st.session_state.exam_state == "MENU":
         st.session_state.consumed_time = 0.0
         st.session_state.is_explaining = False
         st.session_state.q_start_time = time.time()
-        st.rerun() # 即座に画面遷移
+        st.rerun()
 
     c1, c2 = st.columns(2)
     with c1:
@@ -180,14 +181,13 @@ if st.session_state.exam_state == "MENU":
 
 # ---------------- EXAM 画面 ----------------
 elif st.session_state.exam_state == "EXAM":
-    if not st.session_state.questions: # エラー回避
+    if not st.session_state.questions:
         reset_to_menu()
         st.rerun()
 
     q_idx = st.session_state.current_index
     question = st.session_state.questions[q_idx]
     
-    # タイマー計算
     now = time.time()
     elapsed = 0 if st.session_state.is_explaining else (now - st.session_state.q_start_time)
     total_consumed = st.session_state.consumed_time + elapsed
@@ -199,14 +199,12 @@ elif st.session_state.exam_state == "EXAM":
         st.session_state.exam_state = "RESULT"
         st.rerun()
 
-    # 表示
     st.progress((q_idx) / len(st.session_state.questions))
     st.caption(f"Q {q_idx+1} / {len(st.session_state.questions)} | 残り {int(remaining//60)}分 {int(remaining%60)}秒")
     
     st.markdown(f"<div><span class='badge'>{question.get('chapter','')}</span><span class='qid'>{question.get('_id_str','')}</span></div>", unsafe_allow_html=True)
     st.markdown(f"### {question['question']}")
 
-    # 解説画面
     if st.session_state.is_explaining:
         last_log = st.session_state.user_answers[-1]
         if last_log['res']:
@@ -224,35 +222,30 @@ elif st.session_state.exam_state == "EXAM":
                 st.session_state.q_start_time = time.time()
             st.rerun()
 
-    # 回答画面
     else:
         ops = question['options']
-        # コールバックを使わず、if button で処理する
         choice = None
         if st.button(f"1. {ops.get('1','')}", key=f"q{q_idx}_1"): choice = "1"
         if st.button(f"2. {ops.get('2','')}", key=f"q{q_idx}_2"): choice = "2"
         if st.button(f"3. {ops.get('3','')}", key=f"q{q_idx}_3"): choice = "3"
 
         if choice:
-            # 回答処理
             correct = str(question['answer'])
             is_correct = (choice == correct)
             if is_correct: st.session_state.score += 1
             
-            # ログ記録
             st.session_state.user_answers.append({
                 "q_obj": question,
                 "u_key": choice,
                 "c_key": correct,
                 "res": is_correct,
-                "time": elapsed
+                "time": elapsed,
+                "options": ops  # オプションも保存
             })
             
-            # 累積時間を確定
             st.session_state.consumed_time += elapsed
             
             if st.session_state.exam_mode:
-                # 本番モード: 即次へ
                 st.session_state.current_index += 1
                 if st.session_state.current_index >= len(st.session_state.questions):
                     st.session_state.exam_state = "RESULT"
@@ -260,7 +253,6 @@ elif st.session_state.exam_state == "EXAM":
                     st.session_state.q_start_time = time.time()
                 st.rerun()
             else:
-                # 練習モード: 解説へ
                 st.session_state.is_explaining = True
                 st.rerun()
 
@@ -280,7 +272,6 @@ elif st.session_state.exam_state == "RESULT":
         
     st.divider()
     
-    # 弱点分析
     stats = defaultdict(lambda: {"ok":0, "all":0})
     wrong_qs = []
     
@@ -300,8 +291,7 @@ elif st.session_state.exam_state == "RESULT":
         st.divider()
         st.warning(f"間違えた問題: {len(wrong_qs)}問")
         if st.button("🔥 間違えた問題だけ復習する", type="primary"):
-            st.session_state.exam_mode = False # 復習は解説あり
-            # 復習開始ロジック
+            st.session_state.exam_mode = False
             st.session_state.questions = wrong_qs
             st.session_state.time_limit = len(wrong_qs) * 60
             st.session_state.exam_state = "EXAM"
@@ -318,12 +308,39 @@ elif st.session_state.exam_state == "RESULT":
     for i, log in enumerate(st.session_state.user_answers):
         q = log['q_obj']
         icon = "🔵" if log['res'] else "❌"
+        # 修正箇所: ここで選択肢をループ表示
         with st.expander(f"{icon} Q{i+1}: {q['question'][:20]}..."):
             st.write(f"**問題**: {q['question']}")
-            st.info(f"解説: {q['explanation']}")
-            st.caption(f"あなたの回答: {log['u_key']} / 正解: {log['c_key']} (回答時間 {int(log['time'])}秒)")
+            
+            # --- 選択肢の表示ロジック ---
+            opts = log.get('options', {})
+            user_choice = str(log['u_key'])
+            correct_choice = str(log['c_key'])
+            
+            for key in sorted(opts.keys()):
+                opt_text = opts[key]
+                css_class = "opt-normal"
+                prefix = ""
+                
+                # 正解の選択肢は常に緑
+                if key == correct_choice:
+                    css_class = "opt-correct"
+                    prefix = "✅ (正解) "
+                
+                # ユーザーが選んだ選択肢
+                if key == user_choice:
+                    if not log['res']: # 不正解の場合
+                        css_class = "opt-wrong"
+                        prefix = "❌ (あなたの回答) "
+                    else:
+                        prefix = "✅ (あなたの回答) "
 
-    # ここのボタンは「アプリ内のメニュー（二等・一等選択画面）」に戻る
+                st.markdown(f"<div class='opt-box {css_class}'><b>{key}.</b> {prefix}{opt_text}</div>", unsafe_allow_html=True)
+            # ---------------------------
+
+            st.caption(f"回答時間: {log['time']:.1f}s")
+            st.info(f"💡 **解説**:\n{q['explanation']}")
+
     if st.button("トップメニューに戻る", key="back_result", type="secondary"):
         reset_to_menu()
         st.rerun()
