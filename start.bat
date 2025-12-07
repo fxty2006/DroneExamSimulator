@@ -32,6 +32,22 @@ echo  ¦ ƒCƒ“ƒXƒg[ƒ‹’†‚Éu•ÏX‚ð‹–‰Â‚µ‚Ü‚·‚©Hv‚Æ•·‚©‚ê‚½‚çu‚Í‚¢v‚ð‰Ÿ‚µ‚Ä‚­‚
         
 :: Winget‚ðŽg‚Á‚ÄPython 3.12‚ðƒCƒ“ƒXƒg[ƒ‹
 winget install -e --id Python.Python.3.12
+
+:: --- WingetŽ¸”sŽž‚Ì‹~Ï‘[’u ---
+if %errorlevel% neq 0 (
+    echo.
+    echo ========================================================
+    echo  [!] Ž©“®ƒCƒ“ƒXƒg[ƒ‹‚ÉŽ¸”s‚µ‚Ü‚µ‚½B
+    echo  ƒuƒ‰ƒEƒU‚ðŠJ‚¢‚ÄPythonŒöŽ®ƒTƒCƒg‚ð•\Ž¦‚µ‚Ü‚·B
+    echo  Žè“®‚ÅuDownload Python 3.12vƒ{ƒ^ƒ“‚ð‰Ÿ‚µ‚Ä
+    echo  ƒCƒ“ƒXƒg[ƒ‹‚ðs‚Á‚Ä‚­‚¾‚³‚¢B
+    echo  ¦ ƒCƒ“ƒXƒg[ƒ‹ŽžAuAdd Python to PATHv‚Éƒ`ƒFƒbƒN‚ð“ü‚ê‚Ä‚­‚¾‚³‚¢I
+    echo ========================================================
+    timeout /t 5
+    start https://www.python.org/downloads/
+    pause
+    exit
+)
         
 echo.
 echo ========================================================
@@ -44,7 +60,7 @@ exit
 
 :: --- 2. ‰ŠúƒZƒbƒgƒAƒbƒvŠm”F ---
 :VENV_CHECK
-if exist ".venv\Scripts\python.exe" goto MENU
+if exist ".venv\Scripts\python.exe" goto LAUNCH
 
 cls
 echo ========================================================
@@ -75,150 +91,14 @@ echo.
 echo  €”õ‚ªŠ®—¹‚µ‚Ü‚µ‚½B
 timeout /t 3 >nul
 
-:: --- 3. ƒƒCƒ“ƒƒjƒ…[ ---
-:MENU
+:: --- 3. ƒAƒvƒŠ‹N“® ---
+:LAUNCH
 cls
 echo ========================================================
-echo  ƒhƒ[ƒ“‘‰ÆŽ‘Ši Šw‰ÈŽŽŒ±ƒVƒXƒeƒ€
-echo ========================================================
-if exist "count_status.py" .venv\Scripts\python.exe count_status.py
-echo.
-echo  [1] –â‘è‚ðì¬‚·‚é (Generator)
-echo      ¦ Google Gemini APIƒL[‚ª•K—v‚Å‚·
-echo.
-echo  [2] ŽŽŒ±‚ðŽn‚ß‚é (App)
-echo      ƒXƒgƒbƒN‚³‚ê‚½–â‘è‚ðŽg‚Á‚Ä–Í‹[ŽŽŒ±‚ðs‚¢‚Ü‚·B
-echo.
-echo  [3] ƒf[ƒ^ƒx[ƒX‚ðƒ`ƒFƒbƒN‚·‚é (ID•t—^EC•œ)
-echo.
-echo  --- ƒƒ“ƒeƒiƒ“ƒX ---
-echo  [4] ƒŒƒrƒ…[—pCSV‚ðo—Í (Export)
-echo  [5] CSV‚©‚çC³‚ðŽæ‚èž‚Ý (Import)
-echo  [6] APIƒNƒI[ƒ^EŒ’Nf’f (Check Quota)
-echo.
-echo  [H] APIƒL[‚ÌÝ’è•û–@ (Help)
-echo.
-echo  [9] I—¹
-echo.
-echo ========================================================
-
-set /p num="”Ô†‚ð“ü—Í‚µ‚Ä‚­‚¾‚³‚¢ > "
-
-if /i "%num%"=="1" goto CHECK_KEY
-if /i "%num%"=="2" goto APP
-if /i "%num%"=="3" goto CHECK
-if /i "%num%"=="4" goto EXPORT
-if /i "%num%"=="5" goto IMPORT
-if /i "%num%"=="6" goto QUOTA
-if /i "%num%"=="H" goto HELP
-if /i "%num%"=="9" exit
-goto MENU
-
-:: --- Še‹@”\‚Ö‚ÌƒWƒƒƒ“ƒv ---
-:CHECK_KEY
-if exist "apikey.txt" (
-    goto GENERATOR
-) else (
-    goto NO_KEY_ERROR
-)
-
-:GENERATOR
-cls
-echo.
-echo –â‘èì¬ƒc[ƒ‹‚ð‹N“®‚µ‚Ü‚·...
-echo --------------------------------------------------------
-if not exist "rules.pdf" (
-    echo Œx: rules.pdf ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB
-    echo ‹³‘¥PDF‚ð‚±‚ÌƒtƒHƒ‹ƒ_‚É”z’u‚µ‚Ä‚©‚çŽÀs‚µ‚Ä‚­‚¾‚³‚¢B
-    pause
-    goto MENU
-)
-.venv\Scripts\python.exe generator.py
-pause
-goto MENU
-
-:APP
-cls
-echo.
-echo ŽŽŒ±ƒAƒvƒŠ‚ð‹N“®‚µ‚Ü‚·...
-echo --------------------------------------------------------
-echo ‹N“®’†... (ƒuƒ‰ƒEƒU‚ªŠJ‚«‚Ü‚·)
-echo.
-echo ¦I—¹‚·‚éŽž‚ÍA‚±‚Ì•‚¢‰æ–Ê‚ð•Â‚¶‚é‚© Ctrl+C ‚ð‰Ÿ‚µ‚Ä‚­‚¾‚³‚¢B
-.venv\Scripts\python.exe -m streamlit run app.py --browser.gatherUsageStats false
-goto MENU
-
-:CHECK
-cls
-echo.
-echo ƒf[ƒ^ƒx[ƒXf’fƒc[ƒ‹‚ð‹N“®‚µ‚Ü‚·...
-echo --------------------------------------------------------
-.venv\Scripts\python.exe check_db.py
-pause
-goto MENU
-
-:EXPORT
-cls
-echo.
-echo CSVo—Íƒc[ƒ‹‚ð‹N“®‚µ‚Ü‚·...
-echo --------------------------------------------------------
-.venv\Scripts\python.exe export_review.py
-pause
-goto MENU
-
-:IMPORT
-cls
-echo.
-echo CSVŽæžƒc[ƒ‹‚ð‹N“®‚µ‚Ü‚·...
-echo --------------------------------------------------------
-.venv\Scripts\python.exe import_review.py
-pause
-goto MENU
-
-:QUOTA
-cls
-echo.
-echo APIŒ’Nf’fƒc[ƒ‹‚ð‹N“®‚µ‚Ü‚·...
-echo --------------------------------------------------------
-.venv\Scripts\python.exe check_quota.py
-pause
-goto MENU
-
-:: --- ƒwƒ‹ƒv‰æ–Ê ---
-:NO_KEY_ERROR
-cls
-echo.
-echo ========================================================
-echo  APIƒL[‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ
+echo  ƒhƒ[ƒ“‘‰ÆŽ‘Ši Šw‰ÈŽŽŒ±ƒVƒXƒeƒ€ v0.2.1
 echo ========================================================
 echo.
-echo  –â‘è‚ðì¬‚·‚é‚É‚ÍuGoogle Gemini APIƒL[v‚ª•K—v‚Å‚·B
-echo  ˆÈ‰º‚ÌŽè‡‚É]‚Á‚ÄÝ’è‚µ‚Ä‚­‚¾‚³‚¢B
+echo  ƒuƒ‰ƒEƒU‚ð‹N“®‚µ‚Ä‚¢‚Ü‚·...
+echo  I—¹‚·‚éŽž‚Íƒuƒ‰ƒEƒU‚ð•Â‚¶‚ÄA‚±‚Ì‰æ–Ê‚à•Â‚¶‚Ä‚­‚¾‚³‚¢B
 echo.
-goto SHOW_INSTRUCTIONS
-
-:HELP
-cls
-echo ========================================================
-echo  APIƒL[‚ÌÝ’èƒKƒCƒh
-echo ========================================================
-echo.
-:SHOW_INSTRUCTIONS
-echo  y1. APIƒL[‚Æ‚ÍHz
-echo     AI‚ð—˜—p‚·‚é‚½‚ß‚ÌƒpƒXƒ[ƒh‚Ì‚æ‚¤‚È‚à‚Ì‚Å‚·B
-echo     GoogleƒAƒJƒEƒ“ƒg‚ª‚ ‚ê‚Î–³—¿‚ÅŽæ“¾‚Å‚«‚Ü‚·B
-echo.
-echo  y2. Žæ“¾•û–@z
-echo     ˆÈ‰º‚ÌURL‚©‚çuCreate API keyv‚ð‰Ÿ‚µ‚ÄŽæ“¾‚µ‚Ä‚­‚¾‚³‚¢B
-echo     URL: https://aistudio.google.com/app/apikey
-echo.
-echo  y3. Ý’u•û–@z
-echo     1. ‚±‚ÌƒtƒHƒ‹ƒ_‚ÉV‚µ‚¢ƒeƒLƒXƒgƒtƒ@ƒCƒ‹‚ðì‚è‚Ü‚·B
-echo     2. –¼‘O‚ðuapikey.txtv‚É•ÏX‚µ‚Ü‚·B
-echo     3. ‚»‚Ì’†‚ÉAŽæ“¾‚µ‚½ƒL[iAIzaSy...j‚ð“\‚è•t‚¯‚Ä•Û‘¶‚µ‚Ü‚·B
-echo.
-echo  --------------------------------------------------------
-echo  €”õ‚ª‚Å‚«‚½‚çA‚à‚¤ˆê“x [1] ‚ð‘I‘ð‚µ‚Ä‚­‚¾‚³‚¢B
-echo.
-pause
-goto MENU
+.venv\Scripts\python.exe -m streamlit run main_ui.py

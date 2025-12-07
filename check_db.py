@@ -1,29 +1,32 @@
 import os
 import json
 import glob
+import logger  # 共通ログを使用
 
-DATA_DIR = "data"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+STATUS_FILE = os.path.join(DATA_DIR, "db_status.json")
 
-def check_and_clean():
-    print("\n🔍 データベースの診断とID管理を行います...\n")
+def check_and_clean(silent=True):
+    logger.log("Starting DB Check...", "CHECK")
+    logs = []
+    error_details = []
     
-    # 1. フォルダ自体の存在チェック
+    def log(msg):
+        if not silent: print(msg)
+        logs.append(msg)
+
     if not os.path.exists(DATA_DIR):
-        print("❌ 'data' フォルダが見つかりません。")
-        print("   先に [1] 問題を作成する (Generator) を実行してください。")
-        return
+        logger.log("Data dir missing", "ERROR")
+        return ["❌ 'data' フォルダが見つかりません。"], 0, []
 
-    # 2. JSONファイルの存在チェック (ここを追加)
     files = glob.glob(os.path.join(DATA_DIR, "*.json"))
+    files = [f for f in files if "db_status.json" not in f]
+    
     if not files:
-        print("⚠️ データベースファイル(.json)がまだありません。")
-        print("   先に [1] 問題を作成する (Generator) を実行して、問題を作ってください。")
-        return
+        return ["⚠️ データベースファイル(.json)がありません。"], 0, []
 
-    files_to_update = []
-    total_errors = 0
-
-    print(f"📂 {len(files)} 個のファイルを検査します...\n")
+    total_fixed = 0
 
     for filepath in files:
         filename = os.path.basename(filepath)
@@ -33,52 +36,62 @@ def check_and_clean():
             
             if not isinstance(data, list): continue
 
-            valid_data = []
-            # ファイル内の最大IDを探す
             ids = [q['id'] for q in data if 'id' in q and isinstance(q['id'], int)]
             max_id = max(ids) if ids else 0
-            modified = False
-            file_err = 0
-
+            file_modified = False
+            
             for q in data:
-                # 必須項目チェック
-                if all(k in q for k in ["question", "options", "answer", "explanation"]) and q["options"]:
-                    # IDチェック
-                    if 'id' not in q:
-                        max_id += 1
-                        q['id'] = max_id
-                        modified = True
-                    valid_data.append(q)
-                else:
-                    file_err += 1
-                    modified = True # 不良データ削除
+                if 'id' not in q:
+                    max_id += 1
+                    q['id'] = max_id
+                    file_modified = True
+                
+                missing = []
+                required = ["question", "options", "answer", "explanation"]
+                for k in required:
+                    if k not in q or not q[k]: missing.append(k)
+                
+                if "options" in q and isinstance(q["options"], dict):
+                    if not q["options"].get("1") or not q["options"].get("2") or not q["options"].get("3"):
+                        missing.append("options(1-3)")
+                elif "options" not in q:
+                    missing.append("options")
 
-            total_errors += file_err
-            msg = f"   📄 {filename} : "
-            if file_err > 0: msg += f"⚠️不備{file_err}件 "
-            if modified and file_err == 0: msg += "🆔ID付与 "
-            if not modified and file_err == 0: msg += "✅正常"
-            print(msg)
+                if missing:
+                    error_details.append({
+                        "ファイル名": filename,
+                        "ID": q.get('id', '不明'),
+                        "不備項目": ", ".join(missing),
+                        "状態": "要修正"
+                    })
 
-            if modified:
-                files_to_update.append((filepath, valid_data))
+            if file_modified:
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, indent=4, ensure_ascii=False)
+                total_fixed += 1
+                logger.log(f"Fixed ID in {filename}", "CHECK")
 
         except Exception as e:
-            print(f"❌ 読込エラー {filename}: {e}")
+            logger.error(e, f"Error in {filename}")
+            error_details.append({
+                "ファイル名": filename,
+                "ID": "-",
+                "不備項目": str(e),
+                "状態": "読込不可"
+            })
 
-    print("-" * 60)
-    if not files_to_update:
-        print("✨ 全データ正常です。修復の必要はありません。")
-        return
-
-    print(f"\n🛠️ {len(files_to_update)} ファイルの更新が必要です（ID付与または不良削除）。")
-    if input("   実行しますか？ (y/n) > ").strip().lower() == 'y':
-        for path, data in files_to_update:
-            with open(path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=4, ensure_ascii=False)
-        print("✨ 完了しました。")
+    if error_details:
+        try:
+            with open(STATUS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(error_details, f, indent=4, ensure_ascii=False)
+            logger.log(f"Found {len(error_details)} errors", "CHECK")
+        except: pass
     else:
-        print("キャンセルしました。")
+        if os.path.exists(STATUS_FILE):
+            os.remove(STATUS_FILE)
+        logger.log("No errors found", "CHECK")
+
+    return logs, total_fixed, error_details
 
 if __name__ == "__main__":
-    check_and_clean()
+    check_and_clean(silent=False)

@@ -1,16 +1,30 @@
-# 巨大なライブラリフォルダ（ZIPで配布するのでGitには含めない）
-libs/
-
-# 仮想環境フォルダ（PCごとに違うので含めない）
-.venv/
-
-# キャッシュファイル（ゴミ）
+# --- 🐍 Python & 仮想環境 (必須) ---
 __pycache__/
 *.pyc
+.venv/
 
-# 秘密情報（絶対公開ダメ！）
+# --- 🔐 セキュリティ・秘密情報 (絶対公開ダメ！) ---
 apikey.txt
-apiストック.txt
+apikeyリスト.txt
+.streamlit/secrets.toml
 
-# その他
+# --- 🗑️ 一時ファイル・バックアップ ---
+# アップロード用に拡張子を変えた一時ファイルなど
+start.bat.txt
+exam_config.json.txt
+
+# --- 📦 ライブラリ (Gitには含めず、ZIPに含める) ---
+libs/
+
+# --- 📂 データ関連 (Gitには含めず、ZIPに含める) ---
+# dataフォルダの中身（db_*.json, csv_review/, db_status.json等）を全て除外
+data/
+
+# ※ rules.pdf もGitに上げたくない場合は、下の行の # を消してください
+# rules.pdf
+
+# --- 💻 OS・エディタ固有 ---
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
